@@ -1,0 +1,26 @@
+内核模块
+Example:
+	int age =18;
+	char *name = "lichun";
+	module_param(age, int , S_IRUGO);
+	module_param(name, charp , S_IRUGO);
+
+	参数一，存放地址
+	参数二，类型
+		1 bool
+		2 int
+		3 charp 字符串
+S_IWUSR(允许root用户修改该参数)
+S_IRUGO(任何用户都可读)
+
+KERN_EMERG   <0>
+KERN_ALERT   <1>
+KERN_CRIT    <2>
+KERN_ERR     <3>
+KERN_WARNING <4>
+KERN_NOTICE  <5>
+KERN_INFO    <6>
+KERN_DEBUG   <7>
+
+使用模块参数
+insmod hello.ko name=root age=6

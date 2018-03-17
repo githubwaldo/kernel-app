@@ -1,0 +1,39 @@
+Description:
+ 模块A依赖模块B，需要先安装B
+ 
+/*=============== MODULE A ===============*/
+#include <linux/module.h>
+#include <linux/init.h>
+
+void  hello_init(void)  
+{  
+   int reg = add(1,2);
+}  
+
+void  hello_exit(void)  
+{  
+   int reg = sub(2,1);
+}  
+
+module_init(hello_init);
+module_exit(hello_exit);
+
+/*=============== MODULE B ===============*/
+#include <linux/module.h>
+#include <linux/init.h>
+
+int add(int a, int b)  
+{  
+   return a+b;
+}  
+
+int sub(int a, int b)  
+{  
+   return a-b;
+}  
+module_init(add);
+module_exit(sub);
+
+EXPORT_SYSBOL(add);//必须导出才能供其它模块调用
+EXPORT_SYSBOL(sub);//必须导出才能供其它模块调用
+/*===============  END  ===============*/
