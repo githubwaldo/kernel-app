@@ -1,0 +1,104 @@
+﻿1. 简介
++----------------------------------------------------------------+
+|                          应用程序                              |
++----------------------------------------------------------------+
+             |            +-----------+            |              
+       +------------+     | 文件系统  |      +-----------+        
+       | 设备节点N  |     +-----------+      |  套接字   |        
+       +------------+     +块设备文件 +      +-----------+        
+             |            +-----------+            |              
++----------------------------------------------------------------+
+|            |                  |           +------------+       |
+|      +------------+    +-------------+    |   协议栈   |       |
+|      |struct cdev |    |struc gendisk|    +------------+       |
+|      +------------+    +-------------+    +网络设备驱动+       |
+|            |                  |           +------------+       |
++----------------------------------------------------------------+
+        +----------+      +-----------+     +------------+        
+        |字符设备N |      |  块设备   |     |网络接口设备|        
+        +----------+      +-----------+     +------------+        
+2. 一些概念
+设备节点：又称设备文件，位于/dev/xxx
+          ls -al /dev/xxx可以查看设备节点信息
+          一个设备节点代表一个设备（可能是虚拟设备）
+  
+设备号：dev_t原型为uint32
+        MKDEV(int major,int minor)用于制作一个设备号
+        高12位为主设备号，系统确定驱动，MAJOR(dev_t dev)
+        低20位为次设备号，驱动确定设备，MINOR(dev_t dev)  
+        register_chrdev_region()/unregister_chrdev_region
+        *alloc_chrdev_region()/unregister_chrdev_region
+        手动创建：通过/proc/devices获取到设备的主设备号
+            mknod /dev/filename type major minor
+            如:字符设备mknod /dev/serial0 c 100 0
+               块设备  mknod /dev/vda0 b 2l00 0
+一. 字符设备struct cdev表示一个类的设备，与设备号关联
+    获取可用的设备号
+    分配cdev  cdev_alloc()
+    ->初始化cdev  cdev_init()
+      ->注册cdev并和设备号关联  cdev_add()/cdev_del()
+struct cdev {
+	struct kobject kobj;                //1
+	struct module *owner;               //2
+	const struct file_operations *ops;  //3.设备方法集
+	struct list_head list;              //4
+	dev_t dev;                          //5.设备号
+	unsigned int count;                 //6
+}
+
+二. 块设备struct gendisk表示一个类的设备，与设备号关联
+    创建配置请求队列blk_init_queue()/blk_cleanup_queue()
+    分配gendisk
+    ->初始化gendisk
+      ->注册gendisk  add_disk()/cdev_del()
+struct gendisk {
+    int major;                                            //01.主设备号
+    int first_minor;                                      //02.起始次设备号
+    int minors;                                           //03.
+    char disk_name[DISK_NAME_LEN];                        //04.磁盘名称
+    char *(*devnode)(struct gendisk *gd, umode_t *mode);  //05.
+    unsigned int events;                                  //06.
+    unsigned int async_events;                            //07.
+    struct disk_part_tbl __rcu *part_tbl;                 //08.
+    struct hd_struct part0;                               //09.
+    const struct block_device_operations *fops;           //10.设备方法集
+    struct request_queue *queue;                          //11.请求队列
+    void *private_data;                                   //12.
+    int flags;                                            //12.
+    struct kobject *slave_dir;                            //12.
+    struct timer_rand_state *random;                      //12.
+    atomic_t sync_io;                                     //12.
+    struct disk_events *ev;                               //12.
+    struct kobject integrity_kobj;                        //12.
+    int node_id;                                          //12.
+    struct badblocks *bb;                                 //12.
+    struct lockdep_map lockdep_map;                       //12.
+};
++----------------------------------------------------------------+
+|l1                            VFS                               |
+|----------------------------------------------------------------|
+|      +------------+                                            |
+|l2    |disk caches |                                            |
+|      +------------+                                            |
+|----------------------------------------------------------------|
+|        +--- --+   +--- --+    +-----+     +----------+         |
+|l3      | ext2 |   | fat  |    | nfs |     | 设备文件 |         |
+|        +------+   +------+    +-----+     +----------+         |
+|                          mapping layer                         |
+|----------------------------------------------------------------|
+|      +--------------------------------------------------+      |
+|l4    |                 generic block layer              |      |
+|      +--------------------------------------------------+      |
+|      +--------------------------------------------------+      |
+|l5    |                  I/O Schedule layer              |      |
+|      +--------------------------------------------------+      |
+|       +----------+                        +----------+         |
+|l6     |blk driver|                        |blk driver|         |
+|       +----------+                        +----------+         |
++----------------------------------------------------------------+
+        +----------+                        +----------+          
+        |blk device|                        |blk device|          
+        +----------+                        +----------+          
+
+        
+3. 网络接口设备 
