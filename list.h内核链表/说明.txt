@@ -1,0 +1,29 @@
+﻿通常链表至少包含两个域
+1、数据域----存储数据
+2、指针域----下一个节点的联系
+
+struct list_head
+{
+    struct list_head *next, *prev;
+};
+
+初始化链表
+INIT_LIST_HEAD(list_head *head)
+
+插入节点
+/*-----head节点之后插入----*/
+list_add(struct list_head *new, struct list_head *head)
+/*-----head节点之前插入----*/
+list_add_tail(struct list_head *new, struct list_head *head)
+
+删除节点
+list_del(struct list_head *entry)
+
+提取数据
+这是一个宏
+list_entry(ptr, type, member)
+
+
+遍历
+其中pos不必传值，利用它获取值
+list_for_each(struct list_head *pos, struct list_head *head)
